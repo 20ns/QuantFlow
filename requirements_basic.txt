@@ -5,18 +5,11 @@ numpy>=1.24.0
 # Market data providers
 yfinance>=0.2.20
 alpha-vantage>=2.3.1
-python-binance>=1.0.19
-
-# Technical analysis
-# TA-Lib>=0.4.28  # Optional - requires C library installation
-backtrader>=1.9.78.123
 
 # Database
-# sqlite3 is built into Python
 sqlalchemy>=2.0.0
 
 # Async processing
-# asyncio is built into Python
 aiohttp>=3.8.0
 websockets>=11.0.0
 

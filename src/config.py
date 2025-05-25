@@ -18,15 +18,14 @@ class Config:
     
     # Database
     DATABASE_URL: str = os.getenv('DATABASE_URL', 'sqlite:///./data/quantflow.db')
-    
-    # Risk Management
-    MAX_POSITION_SIZE: float = float(os.getenv('MAX_POSITION_SIZE', 0.1))
-    MAX_DAILY_LOSS: float = float(os.getenv('MAX_DAILY_LOSS', 0.05))
-    MAX_DRAWDOWN: float = float(os.getenv('MAX_DRAWDOWN', 0.15))
+      # Risk Management
+    MAX_POSITION_SIZE: float = float((os.getenv('MAX_POSITION_SIZE', '0.1')).split('#')[0].strip())
+    MAX_DAILY_LOSS: float = float((os.getenv('MAX_DAILY_LOSS', '0.05')).split('#')[0].strip())
+    MAX_DRAWDOWN: float = float((os.getenv('MAX_DRAWDOWN', '0.15')).split('#')[0].strip())
     
     # Trading
-    PAPER_TRADING: bool = os.getenv('PAPER_TRADING', 'true').lower() == 'true'
-    INITIAL_CAPITAL: float = float(os.getenv('INITIAL_CAPITAL', 100000))
+    PAPER_TRADING: bool = (os.getenv('PAPER_TRADING', 'true')).split('#')[0].strip().lower() == 'true'
+    INITIAL_CAPITAL: float = float((os.getenv('INITIAL_CAPITAL', '100000')).split('#')[0].strip())
     
     # Data refresh intervals (in seconds)
     REAL_TIME_INTERVAL: int = 1
