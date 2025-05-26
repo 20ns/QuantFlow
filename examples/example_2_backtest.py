@@ -3,7 +3,12 @@ Example 2: Simple Backtest
 This example demonstrates how to run a backtest with the moving average strategy
 """
 import asyncio
+import sys
+import os
 from datetime import date, timedelta
+
+# Add parent directory to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.engine import QuantFlowEngine
 from src.strategies.technical.moving_average import MovingAverageCrossover

@@ -3,8 +3,13 @@ Example 1: Basic Data Fetching and Analysis
 This example shows how to fetch historical data and perform basic analysis
 """
 import asyncio
+import sys
+import os
 from datetime import date, timedelta
 import pandas as pd
+
+# Add parent directory to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.engine import QuantFlowEngine
 

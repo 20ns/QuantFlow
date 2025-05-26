@@ -3,7 +3,12 @@ Example 3: Paper Trading Simulation
 This example shows how to run a live paper trading simulation
 """
 import asyncio
+import sys
+import os
 from datetime import datetime
+
+# Add parent directory to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.engine import QuantFlowEngine
 from src.strategies.technical.moving_average import MovingAverageCrossover
