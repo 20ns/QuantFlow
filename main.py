@@ -9,6 +9,7 @@ from typing import List
 
 from src.engine import QuantFlowEngine
 from src.strategies.technical.moving_average import MovingAverageCrossover
+from src.realtime_engine import RealTimeTradingEngine
 
 @click.group()
 def cli():
@@ -193,6 +194,65 @@ def status():
     click.echo(f"Cash: ${portfolio['cash']:,.2f}")
     click.echo(f"Positions: {portfolio['num_positions']}")
     click.echo(f"P&L: ${portfolio['total_pnl']:,.2f} ({portfolio['total_pnl_percent']:.2f}%)")
+
+@cli.command()
+@click.option('--symbols', '-s', multiple=True, default=['AAPL', 'MSFT', 'GOOGL'], help='Stock symbols for real-time trading')
+@click.option('--duration', '-d', default=10, help='Duration in minutes for real-time session')
+@click.option('--capital', '-c', default=100000, help='Initial capital for paper trading')
+def realtime(symbols: tuple, duration: int, capital: float):
+    """Start real-time trading session (Week 3 feature)"""
+    async def _start_realtime():
+        click.echo(f"🚀 Starting Real-Time Trading Session")
+        click.echo(f"═══════════════════════════════════")
+        click.echo(f"Symbols: {', '.join(symbols)}")
+        click.echo(f"Duration: {duration} minutes")
+        click.echo(f"Capital: ${capital:,.2f}")
+        click.echo(f"Start: {datetime.now().strftime('%H:%M:%S')}")
+        click.echo(f"\n💡 Press Ctrl+C to stop early\n")
+        
+        try:
+            engine = RealTimeTradingEngine(list(symbols), capital)
+            await engine.start(duration)
+        except KeyboardInterrupt:
+            click.echo(f"\n🛑 Session stopped by user")
+        except Exception as e:
+            click.echo(f"❌ Error: {str(e)}")
+    
+    asyncio.run(_start_realtime())
+
+@cli.command()
+@click.option('--symbols', '-s', multiple=True, default=['AAPL', 'MSFT'], help='Symbols to stream')
+@click.option('--duration', '-d', default=5, help='Duration in minutes')
+def stream(symbols: tuple, duration: int):
+    """Stream real-time price data (Week 3 feature)"""
+    async def _stream_data():
+        from src.data.streaming.websocket_client import YahooFinanceWebSocket
+        
+        click.echo(f"📡 Streaming real-time data for {', '.join(symbols)}")
+        click.echo(f"Duration: {duration} minutes")
+        click.echo(f"Press Ctrl+C to stop\n")
+        
+        def price_handler(message):
+            timestamp = message.timestamp.strftime('%H:%M:%S')
+            change_emoji = "🟢" if message.change >= 0 else "🔴"
+            click.echo(f"{timestamp} | {change_emoji} {message.symbol}: ${message.price:.2f} "
+                      f"({message.change:+.2f}, {message.change_percent:+.2f}%)")
+        
+        try:
+            client = YahooFinanceWebSocket(list(symbols))
+            client.add_message_handler(price_handler)
+            
+            # Start streaming with timeout
+            await asyncio.wait_for(client.start_streaming(), timeout=duration*60)
+            
+        except asyncio.TimeoutError:
+            click.echo(f"\n⏰ Streaming completed after {duration} minutes")
+        except KeyboardInterrupt:
+            click.echo(f"\n🛑 Streaming stopped by user")
+        except Exception as e:
+            click.echo(f"❌ Error: {str(e)}")
+    
+    asyncio.run(_stream_data())
 
 if __name__ == '__main__':
     cli()
