@@ -322,3 +322,109 @@ class PortfolioRiskManager:
             metrics.max_drawdown > self.max_portfolio_drawdown or
             abs(metrics.portfolio_risk) > self.max_daily_loss
         )
+
+class RiskManager:
+    """Main risk management coordinator"""
+    
+    def __init__(
+        self,
+        max_position_size: float = 0.25,
+        max_portfolio_risk: float = 0.15,
+        default_stop_pct: float = 0.05,
+        max_portfolio_drawdown: float = 0.15
+    ):
+        self.position_sizer = PositionSizer(max_position_size, max_portfolio_risk)
+        self.stop_manager = StopLossManager(default_stop_pct)
+        self.portfolio_manager = PortfolioRiskManager(max_portfolio_drawdown)
+        self.logger = logging.getLogger('RiskManager')
+        
+        # Track risk state
+        self.trading_halted = False
+        self.last_risk_check = datetime.now()
+    
+    def validate_signal(
+        self,
+        signal: TradingSignal,
+        portfolio_value: float,
+        current_positions: Dict[str, Any]
+    ) -> Optional[TradingSignal]:
+        """Validate and adjust trading signal based on risk parameters"""
+        
+        try:
+            # Check if trading is halted
+            if self.trading_halted:
+                self.logger.warning("Trading halted due to risk limits - signal rejected")
+                return None
+            
+            # Calculate position size
+            if signal.signal_type in [SignalType.BUY, SignalType.SELL]:
+                signal.quantity = self.position_sizer.calculate_position_size(
+                    signal, portfolio_value, current_positions
+                )
+                
+                # Set stop loss for new positions
+                if signal.quantity > 0:
+                    self.stop_manager.set_stop_loss(
+                        signal.symbol,
+                        signal.price,
+                        signal.signal_type
+                    )
+            
+            self.logger.debug(f"Validated signal: {signal.symbol} {signal.signal_type} qty={signal.quantity}")
+            return signal
+            
+        except Exception as e:
+            self.logger.error(f"Error validating signal: {e}")
+            return None
+    
+    def check_market_data(self, message: MarketDataMessage) -> Optional[TradingSignal]:
+        """Check market data for stop loss triggers"""
+        return self.stop_manager.check_stop_conditions(message)
+    
+    def check_portfolio_risk(
+        self,
+        portfolio_value: float,
+        positions: Dict[str, Any],
+        daily_start_value: Optional[float] = None
+    ) -> RiskMetrics:
+        """Check portfolio risk and update trading status"""
+        
+        metrics = self.portfolio_manager.check_portfolio_risk(
+            portfolio_value, positions, daily_start_value
+        )
+        
+        # Update trading halt status
+        should_halt = self.portfolio_manager.should_halt_trading(metrics)
+        if should_halt and not self.trading_halted:
+            self.trading_halted = True
+            self.logger.critical("TRADING HALTED due to risk limits exceeded")
+        elif not should_halt and self.trading_halted:
+            self.trading_halted = False
+            self.logger.info("Trading resumed - risk levels normalized")
+        
+        self.last_risk_check = datetime.now()
+        return metrics
+    
+    def reset_daily_risk(self, portfolio_value: float):
+        """Reset daily risk tracking"""
+        self.portfolio_manager.daily_start_value = portfolio_value
+        self.portfolio_manager.portfolio_high_water_mark = max(
+            self.portfolio_manager.portfolio_high_water_mark, 
+            portfolio_value
+        )
+        self.logger.info(f"Reset daily risk tracking with portfolio value: ${portfolio_value:,.2f}")
+    
+    def get_risk_summary(self) -> Dict[str, Any]:
+        """Get current risk summary"""
+        return {
+            'trading_halted': self.trading_halted,
+            'active_stops': len(self.stop_manager.get_stops()),
+            'last_risk_check': self.last_risk_check,
+            'stop_details': self.stop_manager.get_stops()
+        }
+
+# Export all classes
+__all__ = [
+    'RiskLevel', 'RiskMetrics', 'PositionSizer', 'StopLossManager', 
+    'PortfolioRiskManager', 'RiskManager'
+]

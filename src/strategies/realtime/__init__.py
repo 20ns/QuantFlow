@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass
 from enum import Enum
 
-from ..data.streaming import MarketDataMessage
+from ...data.streaming import MarketDataMessage
 
 class SignalType(Enum):
     """Types of trading signals"""
