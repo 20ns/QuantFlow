@@ -1,0 +1,28 @@
+# Core data processing
+pandas>=2.1.0
+numpy>=1.24.0
+
+# Market data providers
+yfinance>=0.2.20
+alpha-vantage>=2.3.1
+
+# Database
+sqlalchemy>=2.0.0
+
+# Async processing
+aiohttp>=3.8.0
+websockets>=11.0.0
+
+# Visualization and dashboard
+matplotlib>=3.7.0
+plotly>=5.15.0
+streamlit>=1.25.0
+
+# CLI and utilities
+rich>=13.0.0
+python-dotenv>=1.0.0
+click>=8.1.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0

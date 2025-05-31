@@ -1,0 +1,60 @@
+name: Repository Maintenance
+
+on:
+  # Run every Sunday at 2 AM UTC
+  schedule:
+    - cron: '0 2 * * 0'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      push_changes:
+        description: 'Push changes to repository'
+        required: false
+        default: 'true'
+        type: boolean
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Configure Git
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+    
+    - name: Run maintenance script
+      run: |
+        python scripts/maintenance.py --dry-run
+        
+    - name: Execute maintenance
+      if: ${{ github.event.inputs.push_changes == 'true' || github.event_name == 'schedule' }}
+      run: |
+        python scripts/maintenance.py --push
+    
+    - name: Create maintenance report
+      if: always()
+      run: |
+        echo "## Repository Maintenance Report" >> $GITHUB_STEP_SUMMARY
+        echo "**Date:** $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Files Cleaned:" >> $GITHUB_STEP_SUMMARY
+        echo "- Python cache files (__pycache__)" >> $GITHUB_STEP_SUMMARY
+        echo "- Temporary files (*.pyc, *.pyo, *.tmp)" >> $GITHUB_STEP_SUMMARY
+        echo "- Log files (*.log)" >> $GITHUB_STEP_SUMMARY
+        echo "- OS metadata files (.DS_Store, Thumbs.db)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Maintenance completed successfully! ✅" >> $GITHUB_STEP_SUMMARY
